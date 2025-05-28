@@ -7,11 +7,11 @@ namespace PostgresDBService
     /// Provides file management operations backed by a PostgreSQL database using Entity Framework Core.
     /// Implements methods to get files, delete files, get file details, search, and copy files.
     /// </summary>
-    public class PostgresDocumentManager
+    public class PostgresDocumentStorageService
     {
         private readonly DocumentContext _documentContext;
 
-        public PostgresDocumentManager(DocumentContext context)
+        public PostgresDocumentStorageService(DocumentContext context)
         {
             _documentContext = context;
         }
@@ -19,7 +19,7 @@ namespace PostgresDBService
         /// <summary>
         /// Retrieves all files in the database formatted for a file manager UI.
         /// </summary>
-        public async Task<object> GetFilesAsync()
+        public async Task<object> GetDocumentsAsync()
         {
             var documents = await _documentContext.Documents.AsNoTracking()
                 .Select(d => new
@@ -55,6 +55,72 @@ namespace PostgresDBService
             };
 
             return response;
+        }
+      
+        /// <summary>
+        /// Retrieves file details for the specified document.
+        /// </summary>
+        public async Task<object> GetDocumentDetailsAsync(string path, string[] names, FileManagerDirectoryContent[] data)
+        {
+            if (data?.Length == 0)
+            {
+                return BuildErrorResponse("No items provided for details.");
+            }
+
+            if (data.Length > 1)
+            {
+                return new
+                {
+                    cwd = (object)null,
+                    files = (object)null,
+                    error = (object)null,
+                    details = new
+                    {
+                        name = "Multiple Files",
+                        location = path ?? "\\",
+                        isFile = false,
+                        size = "",
+                        created = "",
+                        modified = "",
+                        multipleFiles = true
+                    }
+                };
+            }
+
+            var item = data[0];
+            var doc = await _documentContext.Documents
+                .Where(d => d.Id.ToString() == item.Id)
+                .Select(d => new
+                {
+                    d.Name,
+                    d.CreatedAt,
+                    d.ModifiedAt,
+                    Size = d.FileData != null ? d.FileData.Length : 0,
+                    Location = item.FilterPath ?? "\\"
+                })
+                .FirstOrDefaultAsync();
+
+            if (doc == null)
+            {
+                return BuildErrorResponse("Item not found.");
+            }
+
+            return new
+            {
+                cwd = (object)null,
+                files = (object)null,
+                error = (object)null,
+                details = new
+                {
+                    name = doc.Name,
+                    location = doc.Location,
+                    isFile = true,
+                    size = FormatFileSize(doc.Size),
+                    created = doc.CreatedAt.ToString("M/d/yyyy h:mm:ss tt"),
+                    modified = doc.ModifiedAt.ToString("M/d/yyyy h:mm:ss tt"),
+                    multipleFiles = false
+                }
+            };
         }
 
         /// <summary>
@@ -115,72 +181,6 @@ namespace PostgresDBService
                 details = (object)null,
                 error = (object)null,
                 files = deletedFiles
-            };
-        }
-
-        /// <summary>
-        /// Retrieves file details for the specified document.
-        /// </summary>
-        public async Task<object> GetDetailsAsync(string path, string[] names, FileManagerDirectoryContent[] data)
-        {
-            if (data?.Length == 0)
-            {
-                return BuildErrorResponse("No items provided for details.");
-            }
-
-            if (data.Length > 1)
-            {
-                return new
-                {
-                    cwd = (object)null,
-                    files = (object)null,
-                    error = (object)null,
-                    details = new
-                    {
-                        name = "Multiple Files",
-                        location = path ?? "\\",
-                        isFile = false,
-                        size = "",
-                        created = "",
-                        modified = "",
-                        multipleFiles = true
-                    }
-                };
-            }
-
-            var item = data[0];
-            var doc = await _documentContext.Documents
-                .Where(d => d.Id.ToString() == item.Id)
-                .Select(d => new
-                {
-                    d.Name,
-                    d.CreatedAt,
-                    d.ModifiedAt,
-                    Size = d.FileData != null ? d.FileData.Length : 0,
-                    Location = item.FilterPath ?? "\\"
-                })
-                .FirstOrDefaultAsync();
-
-            if (doc == null)
-            {
-                return BuildErrorResponse("Item not found.");
-            }
-
-            return new
-            {
-                cwd = (object)null,
-                files = (object)null,
-                error = (object)null,
-                details = new
-                {
-                    name = doc.Name,
-                    location = doc.Location,
-                    isFile = true,
-                    size = FormatFileSize(doc.Size),
-                    created = doc.CreatedAt.ToString("M/d/yyyy h:mm:ss tt"),
-                    modified = doc.ModifiedAt.ToString("M/d/yyyy h:mm:ss tt"),
-                    multipleFiles = false
-                }
             };
         }
 

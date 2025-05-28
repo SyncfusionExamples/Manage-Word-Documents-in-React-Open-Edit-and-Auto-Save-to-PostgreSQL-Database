@@ -11,13 +11,13 @@ using System.IO.Compression;
 [ApiController]
 public class DocumentsController : ControllerBase
 {
-    private readonly PostgresDocumentManager _documentManager;
+    private readonly PostgresDocumentStorageService _documentStorageService;
     private readonly DocumentContext _documentContext;
 
     public DocumentsController(DocumentContext context)
     {
         _documentContext = context;
-        _documentManager = new PostgresDocumentManager(_documentContext);
+        _documentStorageService = new PostgresDocumentStorageService(_documentContext);
     }
     /// <summary>
     /// Handles File Manager operations like read, delete, details, search, and copy
@@ -32,11 +32,11 @@ public class DocumentsController : ControllerBase
 
         return args.Action.ToLower() switch
         {
-            "read" => Ok(await _documentManager.GetFilesAsync()),
-            "delete" => Ok(await _documentManager.DeleteAsync(args.Path, args.Names, args.Data)),
-            "details" => Ok(await _documentManager.GetDetailsAsync(args.Path, args.Names, args.Data)),
-            "search" => Ok(await _documentManager.SearchAsync(args.Path, args.SearchString, args.ShowHiddenItems, args.CaseSensitive, args.Data)), // You need to implement SearchAsync
-            "copy" => Ok(await _documentManager.CopyAsync(args.Path, args.TargetPath, args.Names, args.Data, args.RenameFiles)), // You need to implement CopyAsync
+            "read" => Ok(await _documentStorageService.GetDocumentsAsync()),
+            "delete" => Ok(await _documentStorageService.DeleteAsync(args.Path, args.Names, args.Data)),
+            "details" => Ok(await _documentStorageService.GetDocumentDetailsAsync(args.Path, args.Names, args.Data)),
+            "search" => Ok(await _documentStorageService.SearchAsync(args.Path, args.SearchString, args.ShowHiddenItems, args.CaseSensitive, args.Data)), // You need to implement SearchAsync
+            "copy" => Ok(await _documentStorageService.CopyAsync(args.Path, args.TargetPath, args.Names, args.Data, args.RenameFiles)), // You need to implement CopyAsync
             _ => BadRequest($"Unknown action: {args.Action}")
         };
     }
