@@ -42,58 +42,6 @@ public class PostgresDocumentStorageController : ControllerBase
     }
 
     /// <summary>
-    /// Downloads one or more documents. Zips multiple files.
-    /// </summary>
-    [HttpPost("downloadAsync")]
-    public async Task<IActionResult> DownloadAsync([FromForm] string downloadInput)
-    {
-        if (string.IsNullOrWhiteSpace(downloadInput))
-            return BadRequest("Missing download input");
-
-        var args = JsonConvert.DeserializeObject<FileManagerDirectoryContent>(downloadInput);
-
-        if (args.Data == null || args.Data.Length == 0)
-            return BadRequest("No files to download.");
-
-        // Single file case
-        if (args.Data.Length == 1)
-        {
-            var fileItem = args.Data[0];
-            if (!int.TryParse(fileItem.Id, out int id))
-                return BadRequest("Invalid file ID.");
-
-            var document = await _documentContext.Documents.FirstOrDefaultAsync(d => d.Id == id);
-            if (document == null || document.FileData == null || document.FileData.Length == 0)
-                return NotFound("File not found or is empty.");
-
-            var contentType = GetContentType(document.Name);
-            return File(document.FileData, contentType, document.Name);
-        }
-
-        // Multiple files - zip them
-        using var memoryStream = new MemoryStream();
-        using (var zip = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
-        {
-            foreach (var item in args.Data)
-            {
-                if (!int.TryParse(item.Id, out int id))
-                    continue;
-
-                var document = await _documentContext.Documents.FirstOrDefaultAsync(d => d.Id == id);
-                if (document == null || document.FileData == null)
-                    continue;
-
-                var entry = zip.CreateEntry(document.Name, CompressionLevel.Fastest);
-                using var entryStream = entry.Open();
-                await entryStream.WriteAsync(document.FileData, 0, document.FileData.Length);
-            }
-        }
-
-        memoryStream.Seek(0, SeekOrigin.Begin);
-        return File(memoryStream.ToArray(), "application/zip", "Documents.zip");
-    }
-
-    /// <summary>
     /// Returns document data as serialized SFDT JSON for Syncfusion DocumentEditor.
     /// </summary>
 
@@ -163,6 +111,58 @@ public class PostgresDocumentStorageController : ControllerBase
         {
             return BadRequest($"Save failed: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Downloads one or more documents. Zips multiple files.
+    /// </summary>
+    [HttpPost("downloadAsync")]
+    public async Task<IActionResult> DownloadAsync([FromForm] string downloadInput)
+    {
+        if (string.IsNullOrWhiteSpace(downloadInput))
+            return BadRequest("Missing download input");
+
+        var args = JsonConvert.DeserializeObject<FileManagerDirectoryContent>(downloadInput);
+
+        if (args.Data == null || args.Data.Length == 0)
+            return BadRequest("No files to download.");
+
+        // Single file case
+        if (args.Data.Length == 1)
+        {
+            var fileItem = args.Data[0];
+            if (!int.TryParse(fileItem.Id, out int id))
+                return BadRequest("Invalid file ID.");
+
+            var document = await _documentContext.Documents.FirstOrDefaultAsync(d => d.Id == id);
+            if (document == null || document.FileData == null || document.FileData.Length == 0)
+                return NotFound("File not found or is empty.");
+
+            var contentType = GetContentType(document.Name);
+            return File(document.FileData, contentType, document.Name);
+        }
+
+        // Multiple files - zip them
+        using var memoryStream = new MemoryStream();
+        using (var zip = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+        {
+            foreach (var item in args.Data)
+            {
+                if (!int.TryParse(item.Id, out int id))
+                    continue;
+
+                var document = await _documentContext.Documents.FirstOrDefaultAsync(d => d.Id == id);
+                if (document == null || document.FileData == null)
+                    continue;
+
+                var entry = zip.CreateEntry(document.Name, CompressionLevel.Fastest);
+                using var entryStream = entry.Open();
+                await entryStream.WriteAsync(document.FileData, 0, document.FileData.Length);
+            }
+        }
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        return File(memoryStream.ToArray(), "application/zip", "Documents.zip");
     }
 
     /// <summary>
