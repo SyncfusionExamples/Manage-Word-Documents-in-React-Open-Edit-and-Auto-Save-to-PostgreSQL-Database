@@ -1,34 +1,47 @@
 import { FileManagerComponent, Inject, NavigationPane, DetailsView, Toolbar as FileManagerToolbar} from '@syncfusion/ej2-react-filemanager';
 import { DialogComponent } from '@syncfusion/ej2-react-popups';
 
+// FileManager component props:
+// - onFileSelect: callback when a file is selected
+// - onFileManagerLoaded: callback on initial load with document count
+// - editorRef: reference to the Syncfusion DocumentEditor
+// - fileManagerRef: reference to this FileManager component
+// - visible: controls visibility of the dialog
+// - setVisible: function to toggle dialog visibility
 const FileManager = ({ onFileSelect, onFileManagerLoaded, editorRef, fileManagerRef, visible, setVisible }) => {
+
+    // Called after FileManager successfully loads
     const onSuccess = (args) => {
-        const maxId = args.result.docCount;
-        if (onFileManagerLoaded) onFileManagerLoaded(maxId);
+        const maxId = args.result.docCount; // Retrieve document count
+        if (onFileManagerLoaded) onFileManagerLoaded(maxId); // Call parent callback
     };
+
+    // Base API URL
     const hostUrl = 'https://localhost:44305/';
 
+    // Loads a document by its ID into the DocumentEditor
     const loadDocument = async (docId) => {
         try {
             const response = await fetch(hostUrl + `api/documents/${docId}/getDocumentAsync`);
             const data = await response.text();
             if (editorRef?.current?.documentEditor) {
-                editorRef.current.documentEditor.open(data);
+                editorRef.current.documentEditor.open(data); // Load content into the editor
             }
         } catch (err) {
             console.error('Error loading document', err);
         }
     };
 
+    // Triggered when a file is opened via double-click or context menu
     const handleFileOpen = (args) => {
         if (args.fileDetails.isFile) {
             const fileId = args.fileDetails.id;
             const fileName = args.fileDetails.name;
             if (typeof onFileSelect === 'function') {
-                onFileSelect(fileId, fileName);
+                onFileSelect(fileId, fileName); // Call parent callback with file info
             }
-            loadDocument(fileId);
-            setVisible(false); // Close dialog
+            loadDocument(fileId); // Load the selected document
+            setVisible(false); // Close the dialog
         }
     };
 
@@ -42,27 +55,28 @@ const FileManager = ({ onFileSelect, onFileManagerLoaded, editorRef, fileManager
             showCloseIcon={true}
             closeOnEscape={true}
             target="body"
-            beforeClose={() => setVisible(false)}
-            onClose={() => setVisible(false)}
+            beforeClose={() => setVisible(false)} // Set dialog visibility to false before closing
+            onClose={() => setVisible(false)} // Ensure dialog state is updated on close
         >
             <FileManagerComponent
                 id="azure-file-manager"
                 ref={fileManagerRef}
                 ajaxSettings={{
-                    url: hostUrl + 'api/documents',
-                    downloadUrl: hostUrl + 'api/documents/downloadAsync',
+                    url: hostUrl + 'api/documents', // API for file management
+                    downloadUrl: hostUrl + 'api/documents/downloadAsync', // API for file download
                 }}
                 toolbarSettings={{
                     items: ['SortBy', 'Copy', 'Paste', 'Delete', 'Refresh', 'Download', 'Selection', 'View', 'Details'],
                 }}
                 contextMenuSettings={{
-                    file: ['Open', 'Copy', '|', 'Delete', 'Download', '|', 'Details'],
-                    layout: ['SortBy', 'View', 'Refresh', '|', 'Paste', '|', '|', 'Details', '|', 'SelectAll'],
+                    file: ['Open', 'Copy', '|', 'Delete', 'Download', '|', 'Details'], // Context menu options for files
+                    layout: ['SortBy', 'View', 'Refresh', '|', 'Paste', '|', '|', 'Details', '|', 'SelectAll'], // Layout menu options
                     visible: true,
                 }}
-                fileOpen={handleFileOpen}
-                success={onSuccess}
+                fileOpen={handleFileOpen} // Callback for opening a file
+                success={onSuccess} // Callback for successful data load
             >
+                {/* Inject necessary services for FileManager */}
                 <Inject services={[NavigationPane, DetailsView, FileManagerToolbar]} />
             </FileManagerComponent>
         </DialogComponent>

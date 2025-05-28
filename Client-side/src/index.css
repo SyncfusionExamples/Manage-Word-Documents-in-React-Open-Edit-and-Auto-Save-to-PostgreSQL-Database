@@ -21,11 +21,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Code elements font - uses monospaced fonts for code readability */
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
 
+/* Header styling for the document editor section */
 #document-header {
   height: 40px;
   padding: 8px;
@@ -40,6 +42,7 @@ code {
   align-items: center;
 }
 
+/* Centering dialog component with fixed positioning */
 #dialog-component-sample {
   max-height: max-content !important;
   top: 50% !important;
@@ -47,6 +50,7 @@ code {
   transform: translate(-50%, -50%) !important;
 }
 
-#postgres-file{
+/* Fixed height for file manager container */
+#postgres-file {
   height: 800px !important;
 }

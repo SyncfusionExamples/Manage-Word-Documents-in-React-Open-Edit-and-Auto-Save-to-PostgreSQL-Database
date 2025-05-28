@@ -6,41 +6,38 @@ import FileManager from './FileManager';
 DocumentEditorContainerComponent.Inject(DocumentEditorToolbar);
 
 const DocumentEditor = () => {
-  const [maxDocId, setMaxDocId] = useState(null);
-  const containerRef = useRef(null);
-  const [selectedDocId, setSelectedDocId] = useState(null);
-  const [selectedDocName, setSelectedDocName] = useState(null);
-  const [showDialog, setShowDialog] = useState(false);
-  const [showFileManager, setShowFileManager] = React.useState(true);
-  const fileManagerRef = useRef(null);
-  const inputRef = useRef(null);
-  const contentChanged = useRef(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const randomDefaultName = 'New Document'
+  // State and refs
+  const [maxDocId, setMaxDocId] = useState(null);  // Track maximum doc ID for new document creation
+  const containerRef = useRef(null);               // Reference to DocumentEditor container
+  const [selectedDocId, setSelectedDocId] = useState(null); // Selected document ID
+  const [selectedDocName, setSelectedDocName] = useState(null); // Selected document name
+  const [showDialog, setShowDialog] = useState(false); // Controls "New Document" dialog
+  const [showFileManager, setShowFileManager] = useState(true); // Controls FileManager dialog visibility
+  const fileManagerRef = useRef(null);             // Reference to FileManager
+  const inputRef = useRef(null);                   // Input reference for new document name
+  const contentChanged = useRef(false);            // Flag to track content changes
+  const [errorMessage, setErrorMessage] = useState(''); // Error message for name validation
+  const randomDefaultName = 'New_Document';        // Default document name
 
-  const newToolItem = {
-    prefixIcon: "e-de-ctnr-new",
-    tooltipText: "New",
-    text: "New",
-    id: "CreateNewDoc"
-  };
-  const openToolItem = {
-    prefixIcon: "e-de-ctnr-open",
-    tooltipText: "Open file manager",
-    text: "Open",
-    id: "OpenFileManager"
-  };
-  const downloadToolItem = {
-    prefixIcon: "e-de-ctnr-download",
-    tooltipText: "Download",
-    text: "Download",
-    id: "DownloadToLocal"
-  };
+  // Toolbar custom items
+  const newToolItem = { prefixIcon: "e-de-ctnr-new", tooltipText: "New", text: "New", id: "CreateNewDoc" };
+  const openToolItem = { prefixIcon: "e-de-ctnr-open", tooltipText: "Open file manager", text: "Open", id: "OpenFileManager" };
+  const downloadToolItem = { prefixIcon: "e-de-ctnr-download", tooltipText: "Download", text: "Download", id: "DownloadToLocal" };
 
   const hostUrl = "https://localhost:44305/";
-  const toolbarItems = [newToolItem, openToolItem, downloadToolItem, 'Separator', 'Undo', 'Redo', 'Separator', 'Image', 'Table', 'Hyperlink', 'Bookmark', 'TableOfContents', 'Separator', 'Header', 'Footer', 'PageSetup', 'PageNumber', 'Break', 'InsertFootnote', 'InsertEndnote', 'Separator', 'Find', 'Separator', 'Comments', 'TrackChanges', 'Separator', 'LocalClipboard', 'RestrictEditing', 'Separator', 'FormFields', 'UpdateFields', 'ContentControl'];
 
-  const SaveDocument = () => {
+  // Complete toolbar items list
+  const toolbarItems = [
+    newToolItem, openToolItem, downloadToolItem, 'Separator',
+    'Undo', 'Redo', 'Separator', 'Image', 'Table', 'Hyperlink', 'Bookmark',
+    'TableOfContents', 'Separator', 'Header', 'Footer', 'PageSetup', 'PageNumber', 
+    'Break', 'InsertFootnote', 'InsertEndnote', 'Separator', 'Find', 'Separator',
+    'Comments', 'TrackChanges', 'Separator', 'LocalClipboard', 'RestrictEditing',
+    'Separator', 'FormFields', 'UpdateFields', 'ContentControl'
+  ];
+
+  // Save document to the server as base64
+  const autoSaveDocument  = () => {
     const editor = containerRef.current?.documentEditor;
     editor.saveAsBlob('Docx').then((blob) => {
       const reader = new FileReader();
@@ -52,13 +49,8 @@ const DocumentEditor = () => {
         try {
           await fetch(hostUrl + `api/documents/${selectedDocId}/saveDocumentAsync`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              Base64Content: base64Data,
-              FileName: fileName
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Base64Content: base64Data, FileName: fileName })
           });
         } catch (err) {
           console.error('Auto-save error:', err);
@@ -68,7 +60,8 @@ const DocumentEditor = () => {
     });
   };
 
-  const handleDialogSave = async () => {
+  // Create new document logic from dialog
+  const handleFileNamePromptOk  = async () => {
     const documentName = inputRef.current?.value?.trim();
     if (!documentName) {
       setErrorMessage("Document name cannot be empty.");
@@ -86,7 +79,7 @@ const DocumentEditor = () => {
       return;
     }
 
-    // Proceed to save
+    // Proceed with creation
     setErrorMessage("");
     setShowDialog(false);
     const newId = maxDocId + 1;
@@ -97,7 +90,7 @@ const DocumentEditor = () => {
     containerRef.current.documentEditor.openBlank();
   };
 
-  //  Check if a document with a given name already exists on the Azure storage
+  //  Check if a document with a given name already exists on database
   const checkDocumentExistence = async (fileName) => {
     try {
       const response = await fetch(hostUrl + 'api/documents/CheckDocumentExistence', {
@@ -116,9 +109,11 @@ const DocumentEditor = () => {
     }
   };
 
+  // Handle toolbar item clicks
   const handleToolbarItemClick = (args) => {
     let documentName = containerRef.current.documentEditor.documentName;
     const baseDocName = documentName.replace(/\.[^/.]+$/, '');
+
     switch (args.item.id) {
       case 'CreateNewDoc':
         setSelectedDocId(0);
@@ -146,26 +141,31 @@ const DocumentEditor = () => {
     }
   };
 
+  // Auto-save effect runs every second
   React.useEffect(() => {
     const intervalId = setInterval(() => {
       if (contentChanged.current) {
-        SaveDocument();
+        autoSaveDocument();
         contentChanged.current = false;
       }
     }, 1000);
     return () => clearInterval(intervalId);
   });
 
+  // Auto-focus on dialog input
   React.useEffect(() => {
-    if (showDialog  && inputRef.current) {
+    if (showDialog && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
-  }, [showDialog ]);
+  }, [showDialog]);
 
+  // Handle content changes
   const handleContentChange = () => {
     contentChanged.current = true;
   };
+
+  // Load document from FileManager selection
   const loadFileFromFileManager = (fileId, fileName) => {
     setSelectedDocId(fileId);
     containerRef.current.documentEditor.documentName = fileName;
@@ -174,6 +174,7 @@ const DocumentEditor = () => {
 
   return (
     <div>
+      {/* FileManager dialog for opening files */}
       <FileManager
         onFileSelect={loadFileFromFileManager}
         onFileManagerLoaded={(id) => setMaxDocId(id)}
@@ -182,9 +183,13 @@ const DocumentEditor = () => {
         visible={showFileManager}
         setVisible={setShowFileManager}
       />
+
+      {/* Document name display */}
       <div id="document-header">
         {selectedDocName || (inputRef?.current?.value ? inputRef.current.value + '.docx' : '')}
       </div>
+
+      {/* Main document editor container */}
       <DocumentEditorContainerComponent
         ref={containerRef}
         height="calc(100vh - 65px)"
@@ -194,6 +199,8 @@ const DocumentEditor = () => {
         toolbarClick={handleToolbarItemClick}
         contentChange={handleContentChange}
       />
+
+      {/* Dialog for creating new documents */}
       <DialogComponent
         visible={showDialog}
         header='New Document'
@@ -203,8 +210,8 @@ const DocumentEditor = () => {
         close={() => setShowDialog(false)}
         buttons={[
           {
-            click: handleDialogSave,
-            buttonModel: { content: 'Save', isPrimary: true }
+            click: handleFileNamePromptOk ,
+            buttonModel: { content: 'Ok', isPrimary: true }
           },
           {
             click: () => setShowDialog(false),
