@@ -9,12 +9,12 @@ using System.IO.Compression;
 
 [Route("api/[controller]")]
 [ApiController]
-public class DocumentsController : ControllerBase
+public class PostgresDocumentStorageController : ControllerBase
 {
     private readonly PostgresDocumentStorageService _documentStorageService;
     private readonly DocumentContext _documentContext;
 
-    public DocumentsController(DocumentContext context)
+    public PostgresDocumentStorageController(DocumentContext context)
     {
         _documentContext = context;
         _documentStorageService = new PostgresDocumentStorageService(_documentContext);
