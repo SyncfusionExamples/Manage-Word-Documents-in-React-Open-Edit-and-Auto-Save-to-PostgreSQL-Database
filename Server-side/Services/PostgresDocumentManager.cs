@@ -96,7 +96,7 @@ namespace PostgresDBService
             _documentContext.Documents.RemoveRange(documents);
             await _documentContext.SaveChangesAsync();
 
-            // Prepare Syncfusion-style response
+            // Prepare style response
             var deletedFiles = data.Select(d => new
             {
                 name = d.Name,

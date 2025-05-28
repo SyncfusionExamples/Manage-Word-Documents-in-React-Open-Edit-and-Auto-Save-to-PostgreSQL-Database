@@ -94,7 +94,7 @@ public class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Returns document data as serialized SFDT JSON for Syncfusion DocumentEditor.
+    /// Returns document data as serialized SFDT JSON for DocumentEditor.
     /// </summary>
 
     [HttpGet("{docId}/getDocumentAsync")]
