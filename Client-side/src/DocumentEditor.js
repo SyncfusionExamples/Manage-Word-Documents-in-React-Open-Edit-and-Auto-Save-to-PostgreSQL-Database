@@ -47,7 +47,7 @@ const DocumentEditor = () => {
         containerRef.current.documentEditor.documentName = fileName;
 
         try {
-          await fetch(hostUrl + `api/documents/${selectedDocId}/saveDocumentAsync`, {
+          await fetch(hostUrl + `api/PostgresDocumentStorage/${selectedDocId}/saveDocumentAsync`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ Base64Content: base64Data, FileName: fileName })

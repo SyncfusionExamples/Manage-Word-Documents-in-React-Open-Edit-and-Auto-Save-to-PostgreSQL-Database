@@ -22,7 +22,7 @@ const FileManager = ({ onFileSelect, onFileManagerLoaded, editorRef, fileManager
     // Loads a document by its ID into the DocumentEditor
     const loadDocument = async (docId) => {
         try {
-            const response = await fetch(hostUrl + `api/documents/${docId}/getDocumentAsync`);
+            const response = await fetch(hostUrl + `api/PostgresDocumentStorage/${docId}/getDocumentAsync`);
             const data = await response.text();
             if (editorRef?.current?.documentEditor) {
                 editorRef.current.documentEditor.open(data); // Load content into the editor
@@ -62,8 +62,8 @@ const FileManager = ({ onFileSelect, onFileManagerLoaded, editorRef, fileManager
                 id="azure-file-manager"
                 ref={fileManagerRef}
                 ajaxSettings={{
-                    url: hostUrl + 'api/documents', // API for file management
-                    downloadUrl: hostUrl + 'api/documents/downloadAsync', // API for file download
+                    url: hostUrl + 'api/PostgresDocumentStorage', // API for file management
+                    downloadUrl: hostUrl + 'api/PostgresDocumentStorage/downloadAsync', // API for file download
                 }}
                 toolbarSettings={{
                     items: ['SortBy', 'Copy', 'Paste', 'Delete', 'Refresh', 'Download', 'Selection', 'View', 'Details'],
